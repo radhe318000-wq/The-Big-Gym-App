@@ -1,0 +1,68 @@
+plugins {
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+    id("com.google.gms.google-services") version "4.4.2" apply false
+}
+
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+kotlin.code.style=official
+
+# The BIG Gym — Android starter project
+
+A native Android starter for a gym membership app with:
+- Member login using Membership ID + password
+- Member-only profile and fee status
+- BharatPe QR screen for direct UPI payment (no payment gateway)
+- Owner-only admin panel for adding members and manually recording fee payments
+- Firebase Authentication + Cloud Firestore backend
+- Unique IDs generated from a Firestore counter in a trusted Cloud Function
+
+## Important status
+This is a **starter project**, not a ready-to-publish production app. Before using real member data:
+1. Create a Firebase project and register an Android app with package `com.thebiggym.app`.
+2. Download `google-services.json` into `app/`.
+3. Enable Firebase Authentication (Email/Password) and Cloud Firestore.
+4. Deploy the included Cloud Functions from `firebase/functions`.
+5. Create the first owner account and set its role using the trusted setup steps below.
+6. Add the supplied gym logo and BharatPe QR image to the Android drawable resources (see Assets section).
+7. Test with dummy accounts before entering real member data.
+
+## Security design
+- Member authentication maps an ID such as `TBG-0001` to a Firebase Auth email alias.
+- Members should only be able to read their own member document.
+- Only an authenticated owner with a server-verified `role: "owner"` custom claim may create/update member records or record payments.
+- The client app never marks a payment paid automatically. The owner must verify it in BharatPe first.
+- Never put Firebase Admin credentials or service-account keys in the Android app.
+
+The included Firestore rules and Cloud Function are a starting point and must be reviewed/tested before production use.
+
+## Build
+Open this folder in Android Studio (recent stable version), allow Gradle sync, add `google-services.json`, then Run on an Android device/emulator.
+
+## Asset placement
+The supplied assets are included in the drawable folder:
+- `gym_logo.webp` — your lion logo
+- `bharatpe_qr.jpeg` — your BharatPe QR image
+
+The app references these resource names. If your image files are JPEG/WebP, convert them to PNG or update the resource names accordingly.
+
+## First owner setup
+For a real deployment, use a trusted one-time admin script or Firebase Admin SDK environment to:
+- create the owner's Firebase Auth account
+- set the custom claim `{ "role": "owner" }`
+- create `members/{uid}` with `role: "owner"` or use claims consistently
+Never let the Android app set its own owner role. The included callable function demonstrates how member creation should be done by a verified owner; the initial owner claim must be assigned out-of-band.
+
+## Member provisioning
+The owner panel calls a callable Cloud Function to create a Firebase Auth account and member document. This avoids creating Auth users directly from the client. For a production app, add password reset flows, account disable/deletion handling, audit logs, backups, and stronger validation.
+
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories { google(); mavenCentral() }
+}
+rootProject.name = "TheBigGym"
+include(":app")
